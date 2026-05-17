@@ -1,0 +1,166 @@
+{
+  "issues": [
+    {
+      "id": 1,
+      "title": "Add transaction search functionality",
+      "description": "Add a search input to the TransactionTable component that allows filtering transactions by hash, source address, or destination address.",
+      "labels": ["good first issue", "enhancement", "frontend"],
+      "difficulty": "easy",
+      "files": [
+        "components/dashboard/transaction-table.tsx"
+      ],
+      "hints": [
+        "Add a search state to the component",
+        "Filter transactions based on search input",
+        "Consider debouncing the search for performance"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Create asset detail modal",
+      "description": "Add a clickable asset row that opens a detailed view showing full issuer address, all trustlines, and transaction history for that asset.",
+      "labels": ["good first issue", "enhancement", "frontend"],
+      "difficulty": "easy",
+      "files": [
+        "components/inventory/asset-table.tsx",
+        "components/inventory/asset-detail-dialog.tsx"
+      ],
+      "hints": [
+        "Use the existing Dialog component from shadcn/ui",
+        "Display the full issuer public key with copy functionality",
+        "Show a mini transaction history"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Improve keyboard accessibility",
+      "description": "Add proper ARIA labels, roles, and keyboard navigation throughout the dashboard. Focus should be manageable with Tab key.",
+      "labels": ["good first issue", "accessibility", "frontend"],
+      "difficulty": "easy",
+      "files": [
+        "components/dashboard/transaction-table.tsx",
+        "components/inventory/asset-table.tsx",
+        "components/dashboard/alert-banner.tsx"
+      ],
+      "hints": [
+        "Add aria-label to icon buttons",
+        "Ensure all interactive elements are focusable",
+        "Add sr-only text where needed"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Add CSV export for transactions",
+      "description": "Add a button to export the current transaction list to CSV format for offline analysis.",
+      "labels": ["good first issue", "enhancement", "frontend"],
+      "difficulty": "easy",
+      "files": [
+        "components/dashboard/command-center.tsx",
+        "lib/export-utils.ts"
+      ],
+      "hints": [
+        "Create a utility function to convert transactions to CSV",
+        "Use Blob and URL.createObjectURL for download",
+        "Include all relevant transaction fields"
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Add loading skeletons",
+      "description": "Replace the basic loading states with skeleton loaders that match the layout of the actual content.",
+      "labels": ["good first issue", "enhancement", "frontend", "UX"],
+      "difficulty": "easy",
+      "files": [
+        "components/dashboard/stats-cards.tsx",
+        "components/dashboard/transaction-table.tsx",
+        "components/inventory/asset-table.tsx"
+      ],
+      "hints": [
+        "Use the Skeleton component from shadcn/ui",
+        "Match the dimensions of the actual content",
+        "Add subtle animation"
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Add risk level filter to transactions",
+      "description": "Add filter buttons or a dropdown to filter the transaction table by risk level (low, medium, high, critical).",
+      "labels": ["good first issue", "enhancement", "frontend"],
+      "difficulty": "easy",
+      "files": [
+        "components/dashboard/command-center.tsx",
+        "components/dashboard/transaction-table.tsx"
+      ],
+      "hints": [
+        "Add filter state to CommandCenter",
+        "Pass filter to TransactionTable",
+        "Consider using badge-style buttons for visual feedback"
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Add sound notifications for critical alerts",
+      "description": "Play a subtle notification sound when a critical alert is received. Include a setting to enable/disable.",
+      "labels": ["good first issue", "enhancement", "frontend"],
+      "difficulty": "medium",
+      "files": [
+        "hooks/use-transaction-stream.ts",
+        "components/dashboard/dashboard-header.tsx"
+      ],
+      "hints": [
+        "Use the Web Audio API or an audio element",
+        "Store the preference in localStorage",
+        "Only play for critical severity alerts"
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Add time range filter for stats",
+      "description": "Allow users to view stats for different time ranges (1h, 24h, 7d, 30d) instead of just 24h.",
+      "labels": ["good first issue", "enhancement", "frontend", "backend"],
+      "difficulty": "medium",
+      "files": [
+        "components/dashboard/stats-cards.tsx",
+        "app/api/dashboard/route.ts",
+        "hooks/use-dashboard.ts"
+      ],
+      "hints": [
+        "Add a time range selector component",
+        "Update the API to accept a timeRange parameter",
+        "Update the hook to pass the parameter"
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Implement real Stellar SDK integration",
+      "description": "Replace mock data with real Stellar testnet data using the stellar-sdk package for account balance and transaction history.",
+      "labels": ["enhancement", "backend", "stellar"],
+      "difficulty": "medium",
+      "files": [
+        "app/api/wallet/route.ts",
+        "app/api/transactions/route.ts",
+        "lib/stellar-client.ts"
+      ],
+      "hints": [
+        "Use stellar-sdk Server class to connect to Horizon",
+        "Start with testnet: https://horizon-testnet.stellar.org",
+        "Handle rate limiting appropriately"
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Add transaction detail expansion",
+      "description": "Make transaction rows expandable to show full details including memo, ledger, fee, and full addresses.",
+      "labels": ["good first issue", "enhancement", "frontend"],
+      "difficulty": "easy",
+      "files": [
+        "components/dashboard/transaction-table.tsx"
+      ],
+      "hints": [
+        "Use a collapsible row pattern",
+        "Show full addresses without truncation",
+        "Include copy buttons for addresses"
+      ]
+    }
+  ]
+}
