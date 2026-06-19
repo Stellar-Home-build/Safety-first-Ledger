@@ -30,7 +30,7 @@ interface FreezeDialogProps {
   asset: Asset | null
   open: boolean
   onOpenChange: (open: boolean) => void
-  onConfirm: (assetCode: string, reason: string, targetAccount?: string) => Promise<FreezeResponse>
+  onConfirm: (assetCode: string, reason: string, mode: 'freeze' | 'unfreeze', targetAccount?: string) => Promise<FreezeResponse>
   mode: 'freeze' | 'unfreeze'
 }
 
@@ -58,6 +58,7 @@ export function FreezeDialog({
       const response = await onConfirm(
         asset.code, 
         reason.trim(), 
+        mode,
         targetAccount.trim() || undefined
       )
       setResult(response)

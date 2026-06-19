@@ -6,21 +6,8 @@
  */
 
 import { useState, useCallback, useEffect } from 'react'
+import { isConnected, getPublicKey, getNetwork } from '@stellar/freighter-api'
 import type { WalletState, StellarNetwork } from '@/lib/types'
-
-// Freighter API types (scaffold for when Freighter is connected)
-interface FreighterApi {
-  isConnected: () => Promise<boolean>
-  getPublicKey: () => Promise<string>
-  getNetwork: () => Promise<string>
-  signTransaction: (xdr: string, opts?: { networkPassphrase?: string }) => Promise<string>
-}
-
-declare global {
-  interface Window {
-    freighterApi?: FreighterApi
-  }
-}
 
 interface UseWalletReturn extends WalletState {
   /** Connect to Freighter wallet */
@@ -47,16 +34,19 @@ export function useWallet(): UseWalletReturn {
 
   // Check if Freighter is installed
   useEffect(() => {
-    const checkFreighter = () => {
-      const installed = typeof window !== 'undefined' && !!window.freighterApi
-      setIsFreighterInstalled(installed)
+    const checkFreighter = async () => {
+      try {
+        const installed = await isConnected()
+        setIsFreighterInstalled(true)
+      } catch {
+        setIsFreighterInstalled(false)
+      }
     }
     
-    // Check immediately and after a short delay (Freighter injects async)
-    checkFreighter()
-    const timeout = setTimeout(checkFreighter, 1000)
-    
-    return () => clearTimeout(timeout)
+    // Check immediately
+    if (typeof window !== 'undefined') {
+      checkFreighter()
+    }
   }, [])
 
   const fetchBalance = useCallback(async (publicKey: string): Promise<string | null> => {
@@ -77,33 +67,14 @@ export function useWallet(): UseWalletReturn {
     setState((prev) => ({ ...prev, isConnecting: true, error: null }))
 
     try {
-      // Check if Freighter is available
-      if (!window.freighterApi) {
-        // Simulate connection for demo purposes
-        // In production, this would require actual Freighter installation
-        const mockPublicKey = 'GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOUJ3BXFX5SLQHQR'
-        const balance = await fetchBalance(mockPublicKey)
-        
-        setState({
-          isConnected: true,
-          publicKey: mockPublicKey,
-          network: 'testnet',
-          balance,
-          isConnecting: false,
-          error: null,
-        })
-        return
-      }
-
-      // Real Freighter connection
-      const isConnected = await window.freighterApi.isConnected()
+      const isFreighterConnected = await isConnected()
       
-      if (!isConnected) {
+      if (!isFreighterConnected) {
         throw new Error('Freighter is not connected. Please unlock your wallet.')
       }
 
-      const publicKey = await window.freighterApi.getPublicKey()
-      const networkString = await window.freighterApi.getNetwork()
+      const publicKey = await getPublicKey()
+      const networkString = await getNetwork()
       
       // Map network string to our type
       let network: StellarNetwork = 'testnet'

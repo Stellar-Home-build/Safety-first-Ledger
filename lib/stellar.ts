@@ -2,8 +2,8 @@
  * Stellar Horizon API utilities
  */
 
-import { StellarTomlResolver, Horizon } from '@stellar/stellar-sdk'
-import type { RiskLevel, TransactionStatus } from './types'
+import { StellarTomlResolver, Horizon, TransactionBuilder, Operation, Asset, Networks, xdr } from '@stellar/stellar-sdk'
+import type { RiskLevel, TransactionStatus, StellarNetwork } from './types'
 
 // Configuration
 const HORIZON_URLS = {
@@ -12,8 +12,14 @@ const HORIZON_URLS = {
   futurenet: 'https://horizon-futurenet.stellar.org',
 }
 
-const NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK || 'testnet'
-const HORIZON_URL = process.env.HORIZON_URL || HORIZON_URLS[NETWORK as keyof typeof NETWORK]
+const NETWORK_PASSPHRASES = {
+  testnet: Networks.TESTNET,
+  mainnet: Networks.PUBLIC,
+  futurenet: Networks.FUTURENET,
+}
+
+const NETWORK = (process.env.NEXT_PUBLIC_STELLAR_NETWORK || 'testnet') as StellarNetwork
+const HORIZON_URL = process.env.HORIZON_URL || HORIZON_URLS[NETWORK]
 
 // Create Horizon server instance
 const server = new Horizon.Server(HORIZON_URL)
@@ -86,4 +92,74 @@ export function horizonTxToTransaction(horizonTx: any) {
   }
 }
 
-export { server, NETWORK, HORIZON_URL }
+/**
+ * Build a transaction to freeze/unfreeze a trustline for a specific account or asset
+ */
+export async function buildTrustlineTransaction(
+  sourcePublicKey: string,
+  assetCode: string,
+  assetIssuer: string,
+  targetAccount: string,
+  authorize: boolean, // true to unfreeze, false to freeze
+  network: StellarNetwork
+) {
+  const account = await server.loadAccount(sourcePublicKey)
+  const asset = new Asset(assetCode, assetIssuer)
+  
+  const transaction = new TransactionBuilder(account, {
+    fee: await server.fetchBaseFee(),
+    networkPassphrase: NETWORK_PASSPHRASES[network],
+  })
+    .addOperation(
+      Operation.allowTrust({
+        trustor: targetAccount,
+        asset,
+        authorize: authorize,
+      })
+    )
+    .setTimeout(30)
+    .build()
+  
+  return transaction.toXDR()
+}
+
+/**
+ * Build a transaction to set the AUTH_REVOCABLE flag on an asset issuer account
+ * (Enables asset freeze/unfreeze capabilities)
+ */
+export async function buildSetOptionsTransaction(
+  sourcePublicKey: string,
+  setRevocable: boolean,
+  network: StellarNetwork
+) {
+  const account = await server.loadAccount(sourcePublicKey)
+  
+  const transaction = new TransactionBuilder(account, {
+    fee: await server.fetchBaseFee(),
+    networkPassphrase: NETWORK_PASSPHRASES[network],
+  })
+    .addOperation(
+      Operation.setOptions({
+        setFlags: setRevocable ? xdr.AccountFlags.authRevocableFlag() : undefined,
+        clearFlags: !setRevocable ? xdr.AccountFlags.authRevocableFlag() : undefined,
+      })
+    )
+    .setTimeout(30)
+    .build()
+  
+  return transaction.toXDR()
+}
+
+/**
+ * Submit a signed transaction XDR to Horizon
+ */
+export async function submitTransaction(signedXdr: string, network: StellarNetwork) {
+  const transaction = TransactionBuilder.fromXDR(
+    signedXdr,
+    NETWORK_PASSPHRASES[network]
+  )
+  const result = await server.submitTransaction(transaction)
+  return result
+}
+
+export { server, NETWORK, HORIZON_URL, NETWORK_PASSPHRASES }
