@@ -7,6 +7,9 @@
 
 import useSWR from 'swr'
 import { useState, useCallback } from 'react'
+import { signTransaction } from '@stellar/freighter-api'
+import { useWallet } from './use-wallet'
+import { buildTrustlineTransaction, submitTransaction } from '@/lib/stellar'
 import type { Asset, ApiResponse, FreezeStatus, FreezeResponse } from '@/lib/types'
 
 interface AssetsData {
@@ -31,13 +34,19 @@ interface UseAssetsReturn {
   refresh: () => void
   filterByStatus: (status: FreezeStatus | null) => void
   currentFilter: FreezeStatus | null
-  freezeAsset: (assetCode: string, reason: string, targetAccount?: string) => Promise<FreezeResponse>
-  isFreezing: boolean
+  executeAssetAction: (
+    assetCode: string, 
+    reason: string, 
+    mode: 'freeze' | 'unfreeze',
+    targetAccount?: string
+  ) => Promise<FreezeResponse>
+  isExecuting: boolean
 }
 
 export function useAssets(): UseAssetsReturn {
   const [currentFilter, setCurrentFilter] = useState<FreezeStatus | null>(null)
-  const [isFreezing, setIsFreezing] = useState(false)
+  const [isExecuting, setIsExecuting] = useState(false)
+  const { isConnected, publicKey, network } = useWallet()
 
   const url = currentFilter 
     ? `/api/assets?status=${currentFilter}` 
@@ -56,40 +65,72 @@ export function useAssets(): UseAssetsReturn {
     setCurrentFilter(status)
   }, [])
 
-  const freezeAsset = useCallback(async (
+  const executeAssetAction = useCallback(async (
     assetCode: string, 
     reason: string, 
+    mode: 'freeze' | 'unfreeze',
     targetAccount?: string
   ): Promise<FreezeResponse> => {
-    setIsFreezing(true)
+    setIsExecuting(true)
     
     try {
-      const response = await fetch('/api/assets', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          assetCode,
-          reason,
-          targetAccount,
-        }),
+      if (!isConnected || !publicKey) {
+        throw new Error('Please connect your wallet first')
+      }
+      
+      // Find the asset in the list to get its issuer
+      const asset = data?.find(a => a.code === assetCode)
+      if (!asset || !asset.issuer) {
+        throw new Error('Asset not found or missing issuer')
+      }
+      
+      // For now, we'll handle the case where targetAccount is provided
+      // If targetAccount isn't provided, this would be a global freeze (requiring SetOptions)
+      // but for this implementation, we'll focus on per-account freezes first
+      if (!targetAccount) {
+        throw new Error('Target account is required for this action')
+      }
+      
+      // Build the transaction
+      const xdr = await buildTrustlineTransaction(
+        publicKey,
+        assetCode,
+        asset.issuer,
+        targetAccount,
+        mode === 'unfreeze', // authorize true for unfreeze, false for freeze
+        network
+      )
+      
+      // Sign with Freighter
+      const signedXdr = await signTransaction(xdr, {
+        networkPassphrase: network === 'testnet' 
+          ? 'Test SDF Network ; September 2015' 
+          : network === 'mainnet' 
+          ? 'Public Global Stellar Network ; September 2015'
+          : 'Test SDF Future Network ; October 2022'
       })
       
-      const json = await response.json() as ApiResponse<FreezeResponse>
-      
-      if (!json.success || !json.data) {
-        throw new Error(json.error || 'Failed to freeze asset')
-      }
+      // Submit the transaction
+      const result = await submitTransaction(signedXdr, network)
       
       // Refresh the assets list
       mutate()
       
-      return json.data
+      return {
+        success: true,
+        transactionHash: result.hash,
+        affectedAccounts: 1,
+      }
+    } catch (err) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Action failed',
+        affectedAccounts: 0,
+      }
     } finally {
-      setIsFreezing(false)
+      setIsExecuting(false)
     }
-  }, [mutate])
+  }, [data, isConnected, publicKey, network, mutate])
 
   return {
     assets: data ?? [],
@@ -98,7 +139,7 @@ export function useAssets(): UseAssetsReturn {
     refresh: () => mutate(),
     filterByStatus,
     currentFilter,
-    freezeAsset,
-    isFreezing,
+    executeAssetAction,
+    isExecuting,
   }
 }

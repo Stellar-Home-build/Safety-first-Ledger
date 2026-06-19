@@ -51,8 +51,8 @@ export function InventoryPage() {
     refresh, 
     filterByStatus, 
     currentFilter,
-    freezeAsset,
-    isFreezing,
+    executeAssetAction,
+    isExecuting,
   } = useAssets()
 
   const handleFreezeClick = useCallback((asset: Asset) => {
@@ -67,13 +67,14 @@ export function InventoryPage() {
     setDialogOpen(true)
   }, [])
 
-  const handleConfirmFreeze = useCallback(async (
+  const handleConfirmAction = useCallback(async (
     assetCode: string,
     reason: string,
+    mode: 'freeze' | 'unfreeze',
     targetAccount?: string
   ) => {
-    return freezeAsset(assetCode, reason, targetAccount)
-  }, [freezeAsset])
+    return executeAssetAction(assetCode, reason, mode, targetAccount)
+  }, [executeAssetAction])
 
   // Calculate summary stats
   const totalAssets = assets.length
@@ -183,7 +184,7 @@ export function InventoryPage() {
               assets={assets}
               onFreezeClick={handleFreezeClick}
               onUnfreezeClick={handleUnfreezeClick}
-              isLoading={isLoading || isFreezing}
+              isLoading={isLoading || isExecuting}
             />
           </CardContent>
         </Card>
@@ -194,7 +195,7 @@ export function InventoryPage() {
         asset={selectedAsset}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        onConfirm={handleConfirmFreeze}
+        onConfirm={handleConfirmAction}
         mode={dialogMode}
       />
 
