@@ -44,7 +44,7 @@ export function useTransactionStream(
   options: UseTransactionStreamOptions = {}
 ): UseTransactionStreamReturn {
   const {
-    maxTransactions = 100,
+    maxTransactions = 1000,
     autoConnect = true,
     onTransaction,
     onAlert,
