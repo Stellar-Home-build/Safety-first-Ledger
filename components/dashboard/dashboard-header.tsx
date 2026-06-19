@@ -11,6 +11,7 @@ import { WalletConnect } from './wallet-connect'
 import { LiveIndicator } from './live-indicator'
 import { ShieldCheckIcon, LayoutDashboardIcon, PackageIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 interface DashboardHeaderProps {
   isConnected: boolean
@@ -67,6 +68,7 @@ export function DashboardHeader({ isConnected, error }: DashboardHeaderProps) {
         </div>
 
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           <LiveIndicator isConnected={isConnected} error={error} />
           <WalletConnect />
         </div>

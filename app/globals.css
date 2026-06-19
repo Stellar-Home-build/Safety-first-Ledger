@@ -3,59 +3,53 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* SFLM Security Dashboard - Dark Slate Theme */
 :root {
-  /* Dark mode by default for security dashboard */
-  --background: oklch(0.13 0.01 250);
-  --foreground: oklch(0.95 0.01 250);
-  --card: oklch(0.17 0.01 250);
-  --card-foreground: oklch(0.95 0.01 250);
-  --popover: oklch(0.15 0.01 250);
-  --popover-foreground: oklch(0.95 0.01 250);
-  --primary: oklch(0.72 0.19 160);
-  --primary-foreground: oklch(0.13 0.01 250);
-  --secondary: oklch(0.22 0.01 250);
-  --secondary-foreground: oklch(0.95 0.01 250);
-  --muted: oklch(0.25 0.01 250);
-  --muted-foreground: oklch(0.65 0.01 250);
-  --accent: oklch(0.22 0.01 250);
-  --accent-foreground: oklch(0.95 0.01 250);
+  --background: oklch(0.98 0.005 250);
+  --foreground: oklch(0.15 0.005 250);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.15 0.005 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0.005 250);
+  --primary: oklch(0.6 0.2 160);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.96 0.005 250);
+  --secondary-foreground: oklch(0.15 0.005 250);
+  --muted: oklch(0.96 0.005 250);
+  --muted-foreground: oklch(0.55 0.005 250);
+  --accent: oklch(0.96 0.005 250);
+  --accent-foreground: oklch(0.15 0.005 250);
   --destructive: oklch(0.65 0.2 30);
   --destructive-foreground: oklch(0.98 0.01 30);
-  --border: oklch(0.28 0.01 250);
-  --input: oklch(0.22 0.01 250);
-  --ring: oklch(0.72 0.19 160);
+  --border: oklch(0.92 0.005 250);
+  --input: oklch(0.92 0.005 250);
+  --ring: oklch(0.6 0.2 160);
   
-  /* Custom SFLM tokens */
-  --safe: oklch(0.72 0.19 160);
-  --safe-foreground: oklch(0.13 0.01 250);
-  --warning: oklch(0.75 0.18 85);
+  --safe: oklch(0.6 0.2 160);
+  --safe-foreground: oklch(1 0 0);
+  --warning: oklch(0.7 0.18 85);
   --warning-foreground: oklch(0.13 0.01 250);
-  --critical: oklch(0.7 0.18 45);
+  --critical: oklch(0.65 0.2 30);
   --critical-foreground: oklch(0.13 0.01 250);
   
-  /* Chart colors */
-  --chart-1: oklch(0.72 0.19 160);
-  --chart-2: oklch(0.7 0.18 45);
-  --chart-3: oklch(0.75 0.18 85);
-  --chart-4: oklch(0.6 0.15 270);
-  --chart-5: oklch(0.65 0.2 30);
+  --chart-1: oklch(0.6 0.2 160);
+  --chart-2: oklch(0.65 0.2 30);
+  --chart-3: oklch(0.7 0.18 85);
+  --chart-4: oklch(0.55 0.15 270);
+  --chart-5: oklch(0.6 0.2 30);
   
   --radius: 0.5rem;
   
-  /* Sidebar */
-  --sidebar: oklch(0.11 0.01 250);
-  --sidebar-foreground: oklch(0.95 0.01 250);
-  --sidebar-primary: oklch(0.72 0.19 160);
-  --sidebar-primary-foreground: oklch(0.13 0.01 250);
-  --sidebar-accent: oklch(0.18 0.01 250);
-  --sidebar-accent-foreground: oklch(0.95 0.01 250);
-  --sidebar-border: oklch(0.25 0.01 250);
-  --sidebar-ring: oklch(0.72 0.19 160);
+  --sidebar: oklch(0.99 0.005 250);
+  --sidebar-foreground: oklch(0.15 0.005 250);
+  --sidebar-primary: oklch(0.6 0.2 160);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.96 0.005 250);
+  --sidebar-accent-foreground: oklch(0.15 0.005 250);
+  --sidebar-border: oklch(0.92 0.005 250);
+  --sidebar-ring: oklch(0.6 0.2 160);
 }
 
 .dark {
-  /* Same as root - dark mode by default */
   --background: oklch(0.13 0.01 250);
   --foreground: oklch(0.95 0.01 250);
   --card: oklch(0.17 0.01 250);
