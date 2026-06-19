@@ -2,7 +2,7 @@
 
 /**
  * TransactionTable Component
- * Displays real-time transactions with risk scoring
+ * Displays real-time transactions with risk scoring and virtualization
  */
 
 import {
@@ -24,7 +24,8 @@ import {
 } from 'lucide-react'
 import type { Transaction, RiskLevel } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 
 interface TransactionTableProps {
   transactions: Transaction[]
@@ -87,18 +88,19 @@ function getRiskScoreColor(score: number): string {
 
 export function TransactionTable({ 
   transactions, 
-  maxRows = 10,
-  showPagination = false,
   walletAddress,
 }: TransactionTableProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [page, setPage] = useState(0)
-  
-  const displayedTransactions = showPagination 
-    ? transactions.slice(page * maxRows, (page + 1) * maxRows)
-    : transactions.slice(0, maxRows)
-  
-  const totalPages = Math.ceil(transactions.length / maxRows)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const userScrolledRef = useRef(false)
+  const lastTransactionCountRef = useRef(0)
+
+  const rowVirtualizer = useVirtualizer({
+    count: transactions.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: () => 70,
+    overscan: 5,
+  })
 
   const copyTransactionId = async (id: string) => {
     await navigator.clipboard.writeText(id)
@@ -109,6 +111,24 @@ export function TransactionTable({
   const isOutgoing = (tx: Transaction) => {
     return walletAddress && tx.source === walletAddress
   }
+
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current
+    const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10
+    if (isAtBottom) {
+      userScrolledRef.current = false
+    } else {
+      userScrolledRef.current = true
+    }
+  }
+
+  useEffect(() => {
+    if (!userScrolledRef.current && scrollContainerRef.current && transactions.length > lastTransactionCountRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
+    }
+    lastTransactionCountRef.current = transactions.length
+  }, [transactions.length])
 
   if (transactions.length === 0) {
     return (
@@ -122,7 +142,7 @@ export function TransactionTable({
   return (
     <div className="space-y-4">
       <Table>
-        <TableHeader>
+        <TableHeader className="sticky top-0 z-10 bg-background">
           <TableRow className="hover:bg-transparent">
             <TableHead className="w-[100px]">Time</TableHead>
             <TableHead>Transaction</TableHead>
@@ -131,124 +151,133 @@ export function TransactionTable({
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
-          {displayedTransactions.map((tx) => (
-            <TableRow 
-              key={tx.id}
-              className={cn(
-                'transition-colors',
-                tx.riskLevel === 'critical' && 'bg-critical/5 hover:bg-critical/10',
-                tx.riskLevel === 'high' && 'bg-warning/5 hover:bg-warning/10',
-              )}
-            >
-              <TableCell className="font-mono text-xs text-muted-foreground">
-                {formatTimestamp(tx.timestamp)}
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    {walletAddress ? (
-                      isOutgoing(tx) ? (
-                        <ArrowUpRightIcon className="h-4 w-4 text-destructive" />
-                      ) : (
-                        <ArrowDownLeftIcon className="h-4 w-4 text-safe" />
-                      )
-                    ) : null}
-                    <span className="font-mono text-sm">
-                      {formatAddress(tx.source)}
-                    </span>
-                    <span className="text-muted-foreground">→</span>
-                    <span className="font-mono text-sm">
-                      {formatAddress(tx.destination)}
-                    </span>
-                  </div>
-                  {tx.riskReason && (
-                    <span className="text-xs text-muted-foreground line-clamp-1">
-                      {tx.riskReason}
-                    </span>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <span className="font-medium">
-                  {formatAmount(tx.amount, tx.asset)}
-                </span>
-              </TableCell>
-              <TableCell className="text-center">
-                <div className="flex flex-col items-center gap-1">
-                  <Badge 
-                    variant="outline" 
-                    className={cn('capitalize', getRiskBadgeStyles(tx.riskLevel))}
-                  >
-                    {tx.riskLevel}
-                  </Badge>
-                  <span className={cn('text-xs font-mono', getRiskScoreColor(tx.riskScore))}>
-                    {tx.riskScore}%
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => copyTransactionId(tx.id)}
-                  >
-                    {copiedId === tx.id ? (
-                      <CheckIcon className="h-4 w-4 text-safe" />
-                    ) : (
-                      <CopyIcon className="h-4 w-4" />
-                    )}
-                    <span className="sr-only">Copy transaction ID</span>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    asChild
-                  >
-                    <a 
-                      href={`https://stellar.expert/explorer/testnet/tx/${tx.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <ExternalLinkIcon className="h-4 w-4" />
-                      <span className="sr-only">View on explorer</span>
-                    </a>
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
       </Table>
-      
-      {showPagination && totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing {page * maxRows + 1}-{Math.min((page + 1) * maxRows, transactions.length)} of {transactions.length}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(p => Math.max(0, p - 1))}
-              disabled={page === 0}
+      <div 
+        ref={scrollContainerRef} 
+        className="h-[500px] overflow-auto"
+        onScroll={handleScroll}
+      >
+        <Table>
+          <TableBody>
+            <div
+              style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}
             >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const tx = transactions[virtualRow.index]
+                return (
+                  <div
+                    key={tx.id}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: `${virtualRow.size}px`,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                    ref={(node) => {
+                      if (node) {
+                        rowVirtualizer.measureElement(node)
+                      }
+                    }}
+                  >
+                    <TableRow 
+                      className={cn(
+                        'transition-colors',
+                        tx.riskLevel === 'critical' && 'bg-critical/5 hover:bg-critical/10',
+                        tx.riskLevel === 'high' && 'bg-warning/5 hover:bg-warning/10',
+                      )}
+                    >
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {formatTimestamp(tx.timestamp)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            {walletAddress ? (
+                              isOutgoing(tx) ? (
+                                <ArrowUpRightIcon className="h-4 w-4 text-destructive" />
+                              ) : (
+                                <ArrowDownLeftIcon className="h-4 w-4 text-safe" />
+                              )
+                            ) : null}
+                            <span className="font-mono text-sm">
+                              {formatAddress(tx.source)}
+                            </span>
+                            <span className="text-muted-foreground">→</span>
+                            <span className="font-mono text-sm">
+                              {formatAddress(tx.destination)}
+                            </span>
+                          </div>
+                          {tx.riskReason && (
+                            <span className="text-xs text-muted-foreground line-clamp-1">
+                              {tx.riskReason}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium">
+                          {formatAmount(tx.amount, tx.asset)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex flex-col items-center gap-1">
+                          <Badge 
+                            variant="outline" 
+                            className={cn('capitalize', getRiskBadgeStyles(tx.riskLevel))}
+                          >
+                            {tx.riskLevel}
+                          </Badge>
+                          <span className={cn('text-xs font-mono', getRiskScoreColor(tx.riskScore))}>
+                            {tx.riskScore}%
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => copyTransactionId(tx.id)}
+                          >
+                            {copiedId === tx.id ? (
+                              <CheckIcon className="h-4 w-4 text-safe" />
+                            ) : (
+                              <CopyIcon className="h-4 w-4" />
+                            )}
+                            <span className="sr-only">Copy transaction ID</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            asChild
+                          >
+                            <a 
+                              href={`https://stellar.expert/explorer/testnet/tx/${tx.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <ExternalLinkIcon className="h-4 w-4" />
+                              <span className="sr-only">View on explorer</span>
+                            </a>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </div>
+                )
+              })}
+            </div>
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }
